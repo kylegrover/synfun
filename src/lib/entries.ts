@@ -65,20 +65,17 @@ export function formatDate(date: Date) {
   }).format(date).toUpperCase();
 }
 
-// Flatten MDX/markdown body to plain searchable text. Keeps code identifiers
-// (drops fence markers, not the code) so snippet/function bodies stay findable.
+// Normalize an MDX body into searchable text: collapse whitespace and
+// lowercase. We deliberately keep markdown/code punctuation — the browse
+// scorer matches substrings, so decoration like **bold** is already
+// transparent, and stripping it would split identifiers like MAX_STEPS.
 // Pagefind upgrade trigger: see README — switch when the /browse payload gets heavy.
 export function toSearchText(body: string | undefined) {
   if (!body) {
     return '';
   }
 
-  return body
-    .replace(/```\w*/g, ' ')
-    .replace(/[#>*_`~\[\]()|-]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .toLowerCase();
+  return body.replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
 export function estimateReadTime(body: string | undefined) {
