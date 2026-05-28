@@ -1,5 +1,27 @@
 import type { EntryCardData } from './entries';
 
+// A navigable destination (site page or external link) surfaced in search
+// alongside content entries, so people can jump to e.g. Functions or Submit.
+export interface NavTarget {
+  title: string;
+  href: string;
+  hint: string;
+  keywords: string[];
+  external?: boolean;
+}
+
+export function searchPages(pages: NavTarget[], query: string): NavTarget[] {
+  const terms = parseTerms(query);
+  if (terms.length === 0) {
+    return [];
+  }
+
+  return pages.filter((page) => {
+    const haystack = `${page.title} ${page.hint} ${page.keywords.join(' ')}`.toLowerCase();
+    return terms.some((term) => haystack.includes(term));
+  });
+}
+
 // Shared search scoring used by both the /browse facet view and the global
 // search overlay. Substring matching across weighted fields — exact and simple,
 // no dependency. Body text (searchText) is weighted lowest so titles and tags win.

@@ -1,16 +1,21 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import type { EntryCardData } from '../lib/entries';
-  import { searchEntries } from '../lib/search';
+  import { searchEntries, searchPages, type NavTarget } from '../lib/search';
 
-  // Full entry index, preloaded once in BaseLayout so search works from any page.
+  // Preloaded once in BaseLayout so search works from any page.
   export let entries: EntryCardData[] = [];
+  export let pages: NavTarget[] = [];
+
+  type ResultItem =
+    | { kind: 'page'; page: NavTarget }
+    | { kind: 'entry'; entry: EntryCardData };
 
   const LIMIT = 8;
 
   let open = false;
   let query = '';
-  let results: EntryCardData[] = [];
+  let items: ResultItem[] = [];
   let active = 0;
   let inputEl: HTMLInputElement | undefined;
   let debounce: ReturnType<typeof setTimeout>;
@@ -26,23 +31,35 @@
   function hide() {
     open = false;
     query = '';
-    results = [];
+    items = [];
     active = 0;
     clearTimeout(debounce);
   }
 
   // Debounce the scoring so fast typing doesn't re-rank on every keystroke.
+  // Matching pages rank above content entries, since they're navigation intent.
   function onInput() {
     clearTimeout(debounce);
     debounce = setTimeout(() => {
-      results = searchEntries(entries, query, LIMIT);
+      const pageHits: ResultItem[] = searchPages(pages, query).map((page) => ({ kind: 'page', page }));
+      const entryHits: ResultItem[] = searchEntries(entries, query, LIMIT).map((entry) => ({ kind: 'entry', entry }));
+      items = [...pageHits, ...entryHits];
       active = 0;
     }, 110);
   }
 
-  function go(entry: EntryCardData | undefined) {
-    if (entry) {
-      window.location.href = entry.href;
+  function activate(item: ResultItem | undefined) {
+    if (!item) {
+      return;
+    }
+    if (item.kind === 'page') {
+      if (item.page.external) {
+        window.open(item.page.href, '_blank', 'noopener');
+      } else {
+        window.location.href = item.page.href;
+      }
+    } else {
+      window.location.href = item.entry.href;
     }
   }
 
@@ -73,14 +90,14 @@
       hide();
     } else if (event.key === 'ArrowDown') {
       event.preventDefault();
-      active = Math.min(active + 1, results.length - 1);
+      active = Math.min(active + 1, items.length - 1);
     } else if (event.key === 'ArrowUp') {
       event.preventDefault();
       active = Math.max(active - 1, 0);
     } else if (event.key === 'Enter') {
       event.preventDefault();
-      if (results.length > 0) {
-        go(results[active]);
+      if (items.length > 0) {
+        activate(items[active]);
       } else {
         seeAll();
       }
@@ -116,20 +133,35 @@
       </div>
 
       {#if query.trim()}
-        {#if results.length > 0}
+        {#if items.length > 0}
           <ul class="search-results">
-            {#each results as entry, index}
+            {#each items as item, index}
               <li>
-                <a
-                  href={entry.href}
-                  class={`search-result type-${entry.type} ${index === active ? 'is-active' : ''}`}
-                  on:mouseenter={() => (active = index)}
-                >
-                  <span class="search-result__dot"></span>
-                  <span class="search-result__title">{entry.title}</span>
-                  <span class="search-result__type">{entry.type}</span>
-                  <span class="search-result__summary">{entry.summary}</span>
-                </a>
+                {#if item.kind === 'page'}
+                  <a
+                    href={item.page.href}
+                    target={item.page.external ? '_blank' : undefined}
+                    rel={item.page.external ? 'noreferrer' : undefined}
+                    class={`search-result type-page ${index === active ? 'is-active' : ''}`}
+                    on:mouseenter={() => (active = index)}
+                  >
+                    <span class="search-result__dot"></span>
+                    <span class="search-result__title">{item.page.title}{item.page.external ? ' ↗' : ''}</span>
+                    <span class="search-result__type">page</span>
+                    <span class="search-result__summary">{item.page.hint}</span>
+                  </a>
+                {:else}
+                  <a
+                    href={item.entry.href}
+                    class={`search-result type-${item.entry.type} ${index === active ? 'is-active' : ''}`}
+                    on:mouseenter={() => (active = index)}
+                  >
+                    <span class="search-result__dot"></span>
+                    <span class="search-result__title">{item.entry.title}</span>
+                    <span class="search-result__type">{item.entry.type}</span>
+                    <span class="search-result__summary">{item.entry.summary}</span>
+                  </a>
+                {/if}
               </li>
             {/each}
           </ul>
@@ -217,6 +249,10 @@
 
   .search-result.type-write-up .search-result__dot {
     background: var(--magenta);
+  }
+
+  .search-result.type-page .search-result__dot {
+    background: var(--purple);
   }
 
   .search-result__title {

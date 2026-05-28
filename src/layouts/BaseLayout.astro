@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import GlobalSearch from '../components/GlobalSearch.svelte';
 import { getAllEntries } from '../lib/entries';
+import type { NavTarget } from '../lib/search';
 import { buildNewEntryUrl, site } from '../site';
 
 interface Props {
@@ -18,6 +19,15 @@ const {
 
 // Preloaded once per page so the global search overlay works everywhere.
 const entries = await getAllEntries();
+
+// Navigable destinations surfaced in search alongside content entries.
+const searchPages: NavTarget[] = [
+  { title: 'Home', href: '/', hint: 'Featured and recent submissions', keywords: ['home', 'featured', 'recent', 'start'] },
+  { title: 'Functions', href: '/functions', hint: 'Reusable helper functions', keywords: ['functions', 'glsl', 'helpers'] },
+  { title: 'Snippets', href: '/snippets', hint: 'Code drops and small recipes', keywords: ['snippets', 'recipes', 'code'] },
+  { title: 'Write-ups', href: '/write-ups', hint: 'Guides, tutorials, and tips', keywords: ['write-ups', 'writeups', 'guides', 'tutorials', 'tips'] },
+  { title: 'Submit via PR', href: buildNewEntryUrl(), hint: 'Contribute a new entry on GitHub', keywords: ['submit', 'contribute', 'pr', 'pull request', 'add', 'new'], external: true }
+];
 
 const nav = [
   { href: '/browse', label: 'browse', key: 'browse' },
@@ -68,7 +78,7 @@ const nav = [
         <slot />
     </main>
 
-    <GlobalSearch client:load entries={entries} />
+    <GlobalSearch client:load entries={entries} pages={searchPages} />
 
     <script>
       // Any element tagged .js-open-search opens the global search overlay.
