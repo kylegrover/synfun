@@ -57,6 +57,25 @@ const nav = [
     <main class="page-root">
         <slot />
     </main>
+
+    <script>
+      // "?" (shift+/) focuses the search box. We use "?" rather than "/" because
+      // many browsers reserve "/" for their built-in quick-find.
+      document.addEventListener('keydown', (event) => {
+        if (event.key !== '?') return;
+
+        const target = event.target as HTMLElement | null;
+        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+          return;
+        }
+
+        const input = document.querySelector<HTMLInputElement>('.search-form__input');
+        if (input) {
+          event.preventDefault();
+          input.focus();
+        }
+      });
+    </script>
   </body>
 </html>
 

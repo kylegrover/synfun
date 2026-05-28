@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import type { EntryCardData } from '../lib/entries';
 
   export let entries: EntryCardData[] = [];
@@ -15,6 +16,17 @@
   let sortMode: SortMode = initialQuery.trim() ? 'top matches' : 'recent';
 
   const typeFilters: EntryTypeFilter[] = ['all', 'function', 'snippet', 'write-up'];
+
+  // The site is statically prerendered, so initialQuery is always empty at
+  // build time — the real ?q= (e.g. from the homepage search form) is only
+  // available client-side. Pick it up on mount.
+  onMount(() => {
+    const urlQuery = new URLSearchParams(window.location.search).get('q');
+    if (urlQuery && !query) {
+      query = urlQuery;
+      sortMode = 'top matches';
+    }
+  });
 
   function scoreEntry(entry: EntryCardData, terms: string[]) {
     if (terms.length === 0) {
