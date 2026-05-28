@@ -21,7 +21,8 @@ Minimal Astro prototype for a GitHub-backed community library around synesthesia
 
 ## Content model
 
-All content lives in a single collection under `src/content/entries` with a `type` discriminator.
+All content lives in a single collection under `src/content/entries` with a `type` discriminator. This leverages Astro 6's native `globe` loader API inside `src/content.config.ts`.
+Note: The boilerplate seed content currently includes `{/* PLACEHOLDER_CONTENT */}` markers that should be removed or completely replaced prior to launch.
 
 Each MDX entry should include frontmatter like this:
 
